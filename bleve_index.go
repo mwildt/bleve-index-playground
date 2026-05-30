@@ -53,13 +53,8 @@ func NewBleveIndex(indexPath string) (*BleveIndex, error) {
 
 // IndexEntity adds or updates an entity in the index
 func (bi *BleveIndex) IndexEntity(entity Entity) error {
-	// Marshal the entity to JSON bytes for storage
-	data, err := json.Marshal(entity)
-	if err != nil {
-		return fmt.Errorf("failed to marshal entity: %v", err)
-	}
-	// Index the JSON data as a document
-	return bi.index.Index(entity.ID, data)
+	// Index the entity as a struct (Bleve will automatically handle JSON serialization)
+	return bi.index.Index(entity.ID, entity)
 }
 
 // SearchByProjectID searches for entities containing the given project ID
