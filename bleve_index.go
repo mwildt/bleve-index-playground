@@ -29,14 +29,20 @@ func NewBleveIndex(indexPath string) (*BleveIndex, error) {
 		return nil, fmt.Errorf("failed to create index directory: %v", err)
 	}
 
-	// Define the index mapping
-	mapping := bleve.NewIndexMapping()
+	// Define a custom index mapping for Entity
+	entityMapping := bleve.NewDocumentMapping()
+	entityMapping.AddFieldMappingsAt("id", bleve.NewTextFieldMapping())           // Store and index ID
+	entityMapping.AddFieldMappingsAt("source_id", bleve.NewTextFieldMapping())   // Store and index SourceID
+	entityMapping.AddFieldMappingsAt("project_ids", bleve.NewTextFieldMapping()) // Store and index ProjectIDs
+
+	indexMapping := bleve.NewIndexMapping()
+	indexMapping.AddDocumentMapping("entity", entityMapping)
 
 	// Open or create the index
 	index, err := bleve.Open(indexPath)
 	if err != nil {
 		// If the index doesn't exist, create a new one
-		index, err = bleve.New(indexPath, mapping)
+		index, err = bleve.New(indexPath, indexMapping)
 		if err != nil {
 			return nil, fmt.Errorf("failed to create new index: %v", err)
 		}
@@ -47,12 +53,8 @@ func NewBleveIndex(indexPath string) (*BleveIndex, error) {
 
 // IndexEntity adds or updates an entity in the index
 func (bi *BleveIndex) IndexEntity(entity Entity) error {
-	// Marshal the entity to JSON bytes for storage
-	data, err := json.Marshal(entity)
-	if err != nil {
-		return fmt.Errorf("failed to marshal entity: %v", err)
-	}
-	return bi.index.Index(entity.ID, data)
+	// Index the entity as a document with type "entity"
+	return bi.index.Index(entity.ID, entity)
 }
 
 // SearchByProjectID searches for entities containing the given project ID
