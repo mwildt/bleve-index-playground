@@ -29,17 +29,17 @@ func NewBleveIndex(indexPath string) (*BleveIndex, error) {
 		return nil, fmt.Errorf("failed to create index directory: %v", err)
 	}
 
+	// Define the index mapping
+	mapping := bleve.NewIndexMapping()
+
 	// Open or create the index
 	index, err := bleve.Open(indexPath)
-	if err == bleve.ErrorIndexPathDoesNotExist {
-		// Define the index mapping
-		mapping := bleve.NewIndexMapping()
+	if err != nil {
+		// If the index doesn't exist, create a new one
 		index, err = bleve.New(indexPath, mapping)
 		if err != nil {
 			return nil, fmt.Errorf("failed to create new index: %v", err)
 		}
-	} else if err != nil {
-		return nil, fmt.Errorf("failed to open index: %v", err)
 	}
 
 	return &BleveIndex{index: index}, nil
