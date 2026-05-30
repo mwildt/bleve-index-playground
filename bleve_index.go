@@ -65,8 +65,8 @@ func (bi *BleveIndex) IndexEntity(entity Entity) error {
 // SearchByProjectID searches for entities containing the given project ID
 // Returns a list of entities matching the project ID
 func (bi *BleveIndex) SearchByProjectID(projectID string) ([]Entity, error) {
-	// Create a term query to search for the project ID in the project_ids field
-	query := bleve.NewTermQuery(projectID, "project_ids")
+	// Create a query to search for the project ID in the project_ids field
+	query := bleve.NewQueryStringQuery(fmt.Sprintf("project_ids:%s", projectID))
 	searchRequest := bleve.NewSearchRequest(query)
 
 	// Execute the search
