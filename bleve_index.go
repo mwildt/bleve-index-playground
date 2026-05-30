@@ -66,15 +66,25 @@ func (bi *BleveIndex) SearchByProjectID(projectID string) ([]Entity, error) {
 	// Extract the entities from the search results
 	var entities []Entity
 	for _, hit := range searchResults.Hits {
-		var entity Entity
-		docBytes, err := bi.index.GetInternal([]byte(hit.ID))
+		doc, err := bi.index.Document(hit.ID)
 		if err != nil {
 			log.Printf("Warning: failed to retrieve document for ID %s: %v", hit.ID, err)
 			continue
 		}
-		if err := json.Unmarshal(docBytes, &entity); err != nil {
-			log.Printf("Warning: failed to unmarshal document for ID %s: %v", hit.ID, err)
-			continue
+		entity := Entity{
+			ID:       string(doc.Fields["id"]),
+			SourceID: string(doc.Fields["source_id"]),
+		}
+		// Handle project_ids as a slice
+		if projectIDsField, ok := doc.Fields["project_ids"]; ok {
+			// project_ids is stored as a JSON array in Bleve
+			var projectIDs []string
+			if err := json.Unmarshal(projectIDsField, &projectIDs); err == nil {
+				entity.ProjectIDs = projectIDs
+			} else {
+				// Fallback: treat as single string
+				entity.ProjectIDs = []string{string(projectIDsField)}
+			}
 		}
 		entities = append(entities, entity)
 	}
