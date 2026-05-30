@@ -67,12 +67,12 @@ func (bi *BleveIndex) SearchByProjectID(projectID string) ([]Entity, error) {
 	var entities []Entity
 	for _, hit := range searchResults.Hits {
 		var entity Entity
-		doc, err := bi.index.Document(hit.ID)
+		docBytes, err := bi.index.GetInternal([]byte(hit.ID))
 		if err != nil {
 			log.Printf("Warning: failed to retrieve document for ID %s: %v", hit.ID, err)
 			continue
 		}
-		if err := json.Unmarshal(doc, &entity); err != nil {
+		if err := json.Unmarshal(docBytes, &entity); err != nil {
 			log.Printf("Warning: failed to unmarshal document for ID %s: %v", hit.ID, err)
 			continue
 		}
