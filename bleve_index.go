@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"log"
 	"os"
@@ -66,8 +67,13 @@ func (bi *BleveIndex) SearchByProjectID(projectID string) ([]Entity, error) {
 	var entities []Entity
 	for _, hit := range searchResults.Hits {
 		var entity Entity
-		if err := bi.index.Document(hit.ID, &entity); err != nil {
+		doc, err := bi.index.Document(hit.ID)
+		if err != nil {
 			log.Printf("Warning: failed to retrieve document for ID %s: %v", hit.ID, err)
+			continue
+		}
+		if err := json.Unmarshal(doc, &entity); err != nil {
+			log.Printf("Warning: failed to unmarshal document for ID %s: %v", hit.ID, err)
 			continue
 		}
 		entities = append(entities, entity)
