@@ -53,15 +53,20 @@ func NewBleveIndex(indexPath string) (*BleveIndex, error) {
 
 // IndexEntity adds or updates an entity in the index
 func (bi *BleveIndex) IndexEntity(entity Entity) error {
-	// Index the entity as a document with type "entity"
-	return bi.index.Index(entity.ID, entity)
+	// Marshal the entity to JSON bytes for storage
+	data, err := json.Marshal(entity)
+	if err != nil {
+		return fmt.Errorf("failed to marshal entity: %v", err)
+	}
+	// Index the JSON data as a document
+	return bi.index.Index(entity.ID, data)
 }
 
 // SearchByProjectID searches for entities containing the given project ID
 // Returns a list of entities matching the project ID
 func (bi *BleveIndex) SearchByProjectID(projectID string) ([]Entity, error) {
-	// Create a query to search for the project ID in the ProjectIDs array
-	query := bleve.NewQueryStringQuery(fmt.Sprintf("project_ids:%s", projectID))
+	// Create a term query to search for the project ID in the project_ids field
+	query := bleve.NewTermQuery(projectID, "project_ids")
 	searchRequest := bleve.NewSearchRequest(query)
 
 	// Execute the search
