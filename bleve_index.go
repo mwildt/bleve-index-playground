@@ -47,7 +47,12 @@ func NewBleveIndex(indexPath string) (*BleveIndex, error) {
 
 // IndexEntity adds or updates an entity in the index
 func (bi *BleveIndex) IndexEntity(entity Entity) error {
-	return bi.index.Index(entity.ID, entity)
+	// Marshal the entity to JSON bytes for storage
+	data, err := json.Marshal(entity)
+	if err != nil {
+		return fmt.Errorf("failed to marshal entity: %v", err)
+	}
+	return bi.index.Index(entity.ID, data)
 }
 
 // SearchByProjectID searches for entities containing the given project ID
@@ -66,25 +71,17 @@ func (bi *BleveIndex) SearchByProjectID(projectID string) ([]Entity, error) {
 	// Extract the entities from the search results
 	var entities []Entity
 	for _, hit := range searchResults.Hits {
-		doc, err := bi.index.Document(hit.ID)
+		// Retrieve the raw document data
+		docBytes, err := bi.index.GetInternal([]byte(hit.ID))
 		if err != nil {
 			log.Printf("Warning: failed to retrieve document for ID %s: %v", hit.ID, err)
 			continue
 		}
-		entity := Entity{
-			ID:       string(doc.Fields["id"]),
-			SourceID: string(doc.Fields["source_id"]),
-		}
-		// Handle project_ids as a slice
-		if projectIDsField, ok := doc.Fields["project_ids"]; ok {
-			// project_ids is stored as a JSON array in Bleve
-			var projectIDs []string
-			if err := json.Unmarshal(projectIDsField, &projectIDs); err == nil {
-				entity.ProjectIDs = projectIDs
-			} else {
-				// Fallback: treat as single string
-				entity.ProjectIDs = []string{string(projectIDsField)}
-			}
+		// Unmarshal the JSON data into an Entity
+		var entity Entity
+		if err := json.Unmarshal(docBytes, &entity); err != nil {
+			log.Printf("Warning: failed to unmarshal document for ID %s: %v", hit.ID, err)
+			continue
 		}
 		entities = append(entities, entity)
 	}
